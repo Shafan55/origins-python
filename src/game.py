@@ -4,9 +4,15 @@ from src.rules import is_legal_move, get_legal_moves_for_player
 from src.constants import (
     PLAYER_1,
     PLAYER_2,
-    BASIC_PIECE,
-    PLAYER_1_SYMBOL,
-    PLAYER_2_SYMBOL,
+    MALE_PIECE,
+    FEMALE_PIECE,
+    ELEMENT_PIECE,
+    PLAYER_1_MALE_SYMBOL,
+    PLAYER_1_FEMALE_SYMBOL,
+    PLAYER_1_ELEMENT_SYMBOL,
+    PLAYER_2_MALE_SYMBOL,
+    PLAYER_2_FEMALE_SYMBOL,
+    PLAYER_2_ELEMENT_SYMBOL,
     WIN_REWARD,
     ILLEGAL_MOVE_PENALTY,
     NORMAL_MOVE_REWARD,
@@ -31,8 +37,16 @@ class Game:
 
     def setup_board(self) -> None:
         last_index = self.board.size - 1
-        self.board.place_piece(0, 0, Piece(BASIC_PIECE, PLAYER_1, PLAYER_1_SYMBOL))
-        self.board.place_piece(last_index, last_index, Piece(BASIC_PIECE, PLAYER_2, PLAYER_2_SYMBOL))
+
+        # Player 1 pieces on top row
+        self.board.place_piece(0, 0, Piece(MALE_PIECE, PLAYER_1, PLAYER_1_MALE_SYMBOL))
+        self.board.place_piece(0, 1, Piece(FEMALE_PIECE, PLAYER_1, PLAYER_1_FEMALE_SYMBOL))
+        self.board.place_piece(0, 2, Piece(ELEMENT_PIECE, PLAYER_1, PLAYER_1_ELEMENT_SYMBOL, element="earth"))
+
+        # Player 2 pieces on bottom row
+        self.board.place_piece(last_index, last_index, Piece(MALE_PIECE, PLAYER_2, PLAYER_2_MALE_SYMBOL))
+        self.board.place_piece(last_index, last_index - 1, Piece(FEMALE_PIECE, PLAYER_2, PLAYER_2_FEMALE_SYMBOL))
+        self.board.place_piece(last_index, last_index - 2, Piece(ELEMENT_PIECE, PLAYER_2, PLAYER_2_ELEMENT_SYMBOL, element="earth"))
 
     def switch_turn(self) -> None:
         if self.current_player == PLAYER_1:

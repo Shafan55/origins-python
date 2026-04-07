@@ -5,10 +5,8 @@ PLAYER_2 = "Player2"
 
 EMPTY = None
 
-# Current prototype piece type
+# Current / transitional prototype piece types
 BASIC_PIECE = "Basic"
-
-# Future Origins piece types
 HUMAN_PIECE = "human"
 MALE_PIECE = "male"
 FEMALE_PIECE = "female"
@@ -31,24 +29,18 @@ AIR_TILE = "air"
 
 TILE_TYPES = [NEUTRAL_TILE, EARTH_TILE, WATER_TILE, FIRE_TILE, AIR_TILE]
 
-# Symbols for current prototype
+# Symbols for current simplified prototype
 PLAYER_1_SYMBOL = "A"
 PLAYER_2_SYMBOL = "B"
 
-# Future symbols (for later use)
+# Multi-piece prototype symbols
 PLAYER_1_MALE_SYMBOL = "M"
 PLAYER_1_FEMALE_SYMBOL = "F"
-PLAYER_1_EARTH_SYMBOL = "E"
-PLAYER_1_WATER_SYMBOL = "W"
-PLAYER_1_FIRE_SYMBOL = "R"
-PLAYER_1_AIR_SYMBOL = "I"
+PLAYER_1_ELEMENT_SYMBOL = "E"
 
 PLAYER_2_MALE_SYMBOL = "m"
 PLAYER_2_FEMALE_SYMBOL = "f"
-PLAYER_2_EARTH_SYMBOL = "e"
-PLAYER_2_WATER_SYMBOL = "w"
-PLAYER_2_FIRE_SYMBOL = "r"
-PLAYER_2_AIR_SYMBOL = "i"
+PLAYER_2_ELEMENT_SYMBOL = "e"
 
 # Rewards
 WIN_REWARD = 10

@@ -17,7 +17,11 @@ def test_game_starts_with_player_1():
 def test_initial_piece_positions():
     game = Game(board_size=4)
     assert game.board.get_piece(0, 0) is not None
+    assert game.board.get_piece(0, 1) is not None
+    assert game.board.get_piece(0, 2) is not None
     assert game.board.get_piece(3, 3) is not None
+    assert game.board.get_piece(3, 2) is not None
+    assert game.board.get_piece(3, 1) is not None
 
 
 def test_legal_moves_exist_for_player_1():
@@ -28,7 +32,7 @@ def test_legal_moves_exist_for_player_1():
 
 def test_successful_move_switches_turn():
     game = Game(board_size=4)
-    moved, reward = game.make_move(0, 0, 1, 1)
+    moved, reward = game.make_move(0, 0, 1, 0)
 
     assert moved is True
     assert reward == NORMAL_MOVE_REWARD
@@ -50,8 +54,8 @@ def test_environment_reset_returns_valid_state():
 
     assert isinstance(state, tuple)
     assert len(state) == 16
-    assert state.count(1) == 1
-    assert state.count(2) == 1
+    assert state.count(1) == 3
+    assert state.count(2) == 3
 
 
 def test_environment_returns_valid_actions():
@@ -77,17 +81,16 @@ def test_environment_step_returns_correct_format():
     assert isinstance(done, bool)
     assert isinstance(info, dict)
     assert "success" in info
+    assert "current_player" in info
+    assert "winner" in info
 
 
 def test_winning_move_sets_game_over_and_winner():
     game = Game(board_size=4)
 
-    # Move Player 1 piece near goal
     piece = game.board.get_piece(0, 0)
     game.board.grid[0][0] = None
     game.board.grid[2][2] = piece
-
-    # Clear goal square
     game.board.grid[3][3] = None
 
     moved, reward = game.make_move(2, 2, 3, 3)
@@ -101,12 +104,9 @@ def test_winning_move_sets_game_over_and_winner():
 def test_environment_step_sets_done_true_on_win():
     env = OriginsEnv(board_size=4)
 
-    # Move Player 1 piece near goal
     piece = env.game.board.get_piece(0, 0)
     env.game.board.grid[0][0] = None
     env.game.board.grid[2][2] = piece
-
-    # Clear goal square
     env.game.board.grid[3][3] = None
 
     next_state, reward, done, info = env.step((2, 2, 3, 3))
