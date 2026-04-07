@@ -40,7 +40,10 @@ class QLearningAgent:
         current_q = self.get_q_value(state, action)
 
         if next_valid_actions:
-            max_future_q = max(self.get_q_value(next_state, next_action) for next_action in next_valid_actions)
+            max_future_q = max(
+                self.get_q_value(next_state, next_action)
+                for next_action in next_valid_actions
+            )
         else:
             max_future_q = 0.0
 
@@ -59,6 +62,8 @@ def train_q_learning(episodes: int = 500):
     agent = QLearningAgent()
 
     episode_rewards = []
+    episode_steps = []
+    win_count = 0
 
     for episode in range(episodes):
         state = env.reset()
@@ -83,19 +88,42 @@ def train_q_learning(episodes: int = 500):
             total_reward += reward
             step_count += 1
 
+            if done and reward > 0:
+                win_count += 1
+
         agent.decay_epsilon()
         episode_rewards.append(total_reward)
+        episode_steps.append(step_count)
 
         if (episode + 1) % 50 == 0:
             average_reward = sum(episode_rewards[-50:]) / 50
+            average_steps = sum(episode_steps[-50:]) / 50
+            recent_wins = sum(1 for r in episode_rewards[-50:] if r > 0)
+
             print(
                 f"Episode {episode + 1}/{episodes} | "
-                f"Average Reward (last 50): {average_reward:.2f} | "
+                f"Avg Reward (last 50): {average_reward:.2f} | "
+                f"Avg Steps (last 50): {average_steps:.2f} | "
+                f"Wins (last 50): {recent_wins}/50 | "
                 f"Epsilon: {agent.epsilon:.3f} | "
                 f"Q-table size: {len(agent.q_table)}"
             )
 
-    return agent, episode_rewards
+    overall_average_reward = sum(episode_rewards) / len(episode_rewards)
+    overall_average_steps = sum(episode_steps) / len(episode_steps)
+    win_rate = (win_count / episodes) * 100
+
+    print("\nTRAINING SUMMARY")
+    print("=" * 50)
+    print(f"Total episodes: {episodes}")
+    print(f"Overall average reward: {overall_average_reward:.2f}")
+    print(f"Overall average steps: {overall_average_steps:.2f}")
+    print(f"Total wins: {win_count}/{episodes}")
+    print(f"Win rate: {win_rate:.2f}%")
+    print(f"Final epsilon: {agent.epsilon:.3f}")
+    print(f"Final Q-table size: {len(agent.q_table)}")
+
+    return agent, episode_rewards, episode_steps
 
 
 def evaluate_agent(agent, episodes: int = 3):
@@ -107,11 +135,14 @@ def evaluate_agent(agent, episodes: int = 3):
     old_epsilon = agent.epsilon
     agent.epsilon = 0.0
 
+    wins = 0
+
     for episode in range(episodes):
         state = env.reset()
         done = False
         step_count = 0
         max_steps = 20
+        final_reward = 0
 
         print(f"\nEvaluation Episode {episode + 1}")
         env.render()
@@ -126,12 +157,124 @@ def evaluate_agent(agent, episodes: int = 3):
 
             print(f"\nChosen action: {action}")
             next_state, reward, done, info = env.step(action)
+            final_reward = reward
+
             print(f"Reward: {reward} | Done: {done} | Info: {info}")
             env.render()
 
             state = next_state
             step_count += 1
 
+        if done and final_reward > 0:
+            wins += 1
+
         print(f"Episode finished in {step_count} steps.")
 
+    print("\nEVALUATION SUMMARY")
+    print("=" * 40)
+    print(f"Wins: {wins}/{episodes}")
+    print(f"Evaluation win rate: {(wins / episodes) * 100:.2f}%")
+
     agent.epsilon = old_epsilon
+
+
+def evaluate_random_agent(episodes: int = 20):
+    env = OriginsEnv(board_size=4)
+    wins = 0
+    total_steps = 0
+
+    print("\nRANDOM BASELINE EVALUATION")
+    print("=" * 40)
+
+    for episode in range(episodes):
+        env.reset()
+        done = False
+        step_count = 0
+        max_steps = 20
+        final_reward = 0
+
+        while not done and step_count < max_steps:
+            valid_actions = env.get_valid_actions()
+
+            if not valid_actions:
+                break
+
+            action = random.choice(valid_actions)
+            _, reward, done, _ = env.step(action)
+            final_reward = reward
+            step_count += 1
+
+        if done and final_reward > 0:
+            wins += 1
+
+        total_steps += step_count
+
+    win_rate = (wins / episodes) * 100
+    average_steps = total_steps / episodes
+
+    print(f"Wins: {wins}/{episodes}")
+    print(f"Random agent win rate: {win_rate:.2f}%")
+    print(f"Average steps: {average_steps:.2f}")
+
+    return {
+        "wins": wins,
+        "episodes": episodes,
+        "win_rate": win_rate,
+        "average_steps": average_steps,
+    }
+
+
+def compare_agents(agent, trained_episodes: int = 20, random_episodes: int = 20):
+    print("\nAGENT COMPARISON")
+    print("=" * 50)
+
+    old_epsilon = agent.epsilon
+    agent.epsilon = 0.0
+
+    env = OriginsEnv(board_size=4)
+    trained_wins = 0
+    trained_total_steps = 0
+
+    for _ in range(trained_episodes):
+        state = env.reset()
+        done = False
+        step_count = 0
+        max_steps = 20
+        final_reward = 0
+
+        while not done and step_count < max_steps:
+            valid_actions = env.get_valid_actions()
+            action = agent.choose_action(state, valid_actions)
+
+            if action is None:
+                break
+
+            next_state, reward, done, _ = env.step(action)
+            state = next_state
+            final_reward = reward
+            step_count += 1
+
+        if done and final_reward > 0:
+            trained_wins += 1
+
+        trained_total_steps += step_count
+
+    trained_win_rate = (trained_wins / trained_episodes) * 100
+    trained_average_steps = trained_total_steps / trained_episodes
+
+    agent.epsilon = old_epsilon
+
+    random_results = evaluate_random_agent(episodes=random_episodes)
+
+    print("\nCOMPARISON SUMMARY")
+    print("=" * 50)
+    print(
+        f"Trained agent -> Wins: {trained_wins}/{trained_episodes} | "
+        f"Win rate: {trained_win_rate:.2f}% | "
+        f"Average steps: {trained_average_steps:.2f}"
+    )
+    print(
+        f"Random agent  -> Wins: {random_results['wins']}/{random_results['episodes']} | "
+        f"Win rate: {random_results['win_rate']:.2f}% | "
+        f"Average steps: {random_results['average_steps']:.2f}"
+    )
