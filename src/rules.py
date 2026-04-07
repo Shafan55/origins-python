@@ -5,7 +5,38 @@ from src.constants import (
     MALE_PIECE,
     FEMALE_PIECE,
     ELEMENT_PIECE,
+    EARTH,
+    WATER,
+    FIRE,
+    AIR,
+    NEUTRAL_TILE,
+    EARTH_TILE,
+    WATER_TILE,
+    FIRE_TILE,
+    AIR_TILE,
 )
+
+
+ELEMENT_TO_TILE = {
+    EARTH: EARTH_TILE,
+    WATER: WATER_TILE,
+    FIRE: FIRE_TILE,
+    AIR: AIR_TILE,
+}
+
+DOMINATES = {
+    EARTH: WATER,
+    WATER: FIRE,
+    FIRE: AIR,
+    AIR: EARTH,
+}
+
+EQUAL_ELEMENTS = {
+    EARTH: {FIRE},
+    FIRE: {EARTH},
+    WATER: {AIR},
+    AIR: {WATER},
+}
 
 
 def is_within_bounds(row: int, col: int, size: int) -> bool:
@@ -17,19 +48,83 @@ def is_same_position(from_row: int, from_col: int, to_row: int, to_col: int) -> 
 
 
 def get_player_forward_direction(current_player: str) -> int:
-    """
-    Player 1 starts at the top and moves downward (+1 row).
-    Player 2 starts at the bottom and moves upward (-1 row).
-    """
     return 1 if current_player == PLAYER_1 else -1
 
 
 def is_human_piece(piece) -> bool:
-    return piece.piece_type in {MALE_PIECE, FEMALE_PIECE}
+    return piece is not None and piece.piece_type in {MALE_PIECE, FEMALE_PIECE}
 
 
 def is_element_piece(piece) -> bool:
-    return piece.piece_type == ELEMENT_PIECE
+    return piece is not None and piece.piece_type == ELEMENT_PIECE
+
+
+def get_tile_element(tile_type: str):
+    if tile_type == EARTH_TILE:
+        return EARTH
+    if tile_type == WATER_TILE:
+        return WATER
+    if tile_type == FIRE_TILE:
+        return FIRE
+    if tile_type == AIR_TILE:
+        return AIR
+    return None
+
+
+def element_dominates(element_a: str, element_b: str) -> bool:
+    return DOMINATES.get(element_a) == element_b
+
+
+def elements_are_equal(element_a: str, element_b: str) -> bool:
+    return element_b in EQUAL_ELEMENTS.get(element_a, set())
+
+
+def get_path_squares(from_row: int, from_col: int, to_row: int, to_col: int):
+    row_diff = to_row - from_row
+    col_diff = to_col - from_col
+
+    step_row = 0 if row_diff == 0 else (1 if row_diff > 0 else -1)
+    step_col = 0 if col_diff == 0 else (1 if col_diff > 0 else -1)
+
+    if row_diff != 0 and col_diff != 0 and abs(row_diff) != abs(col_diff):
+        return None
+
+    path = []
+    current_row = from_row + step_row
+    current_col = from_col + step_col
+
+    while (current_row, current_col) != (to_row, to_col):
+        path.append((current_row, current_col))
+        current_row += step_row
+        current_col += step_col
+
+    return path
+
+
+def is_straight_line_move(from_row: int, from_col: int, to_row: int, to_col: int) -> bool:
+    row_diff = abs(to_row - from_row)
+    col_diff = abs(to_col - from_col)
+    return (
+        from_row == to_row
+        or from_col == to_col
+        or row_diff == col_diff
+    )
+
+
+def human_move_is_forward_only(from_row: int, to_row: int, current_player: str) -> bool:
+    forward = get_player_forward_direction(current_player)
+    return (to_row - from_row) * forward > 0
+
+
+def path_is_clear_for_human(board, path) -> bool:
+    for row, col in path:
+        if board.get_piece(row, col) is not None:
+            return False
+    return True
+
+
+def human_target_tile_is_valid(board, to_row: int, to_col: int) -> bool:
+    return board.get_tile(to_row, to_col) != NEUTRAL_TILE
 
 
 def is_legal_human_move(
@@ -42,25 +137,94 @@ def is_legal_human_move(
     current_player: str,
 ) -> bool:
     """
-    Decisive prototype rule for Male/Female pieces:
-    - can move 1 step forward
-    - can move 1 step diagonally forward
-    - cannot move sideways
+    Origins-style human piece rule:
+    - move in straight line (vertical, horizontal, diagonal)
     - cannot move backward
-    - can move into empty square
-    - can capture opponent by landing on occupied square
+    - cannot move onto neutral tile
+    - cannot jump over pieces
+    - cannot directly capture by landing
     """
-    row_diff = to_row - from_row
-    col_diff = to_col - from_col
-    forward = get_player_forward_direction(current_player)
+    if not is_straight_line_move(from_row, from_col, to_row, to_col):
+        return False
 
-    allowed_moves = {
-        (forward, 0),    # forward
-        (forward, 1),    # forward-right
-        (forward, -1),   # forward-left
-    }
+    if not human_move_is_forward_only(from_row, to_row, current_player):
+        return False
 
-    if (row_diff, col_diff) not in allowed_moves:
+    if not human_target_tile_is_valid(board, to_row, to_col):
+        return False
+
+    path = get_path_squares(from_row, from_col, to_row, to_col)
+    if path is None:
+        return False
+
+    if not path_is_clear_for_human(board, path):
+        return False
+
+    target_piece = board.get_piece(to_row, to_col)
+    if target_piece is not None:
+        return False
+
+    return True
+
+
+def element_can_enter_tile(moving_element: str, target_tile: str) -> bool:
+    if target_tile == NEUTRAL_TILE:
+        return True
+
+    target_element = get_tile_element(target_tile)
+    if target_element is None:
+        return False
+
+    if target_element == moving_element:
+        return True
+
+    if elements_are_equal(moving_element, target_element):
+        return False
+
+    if element_dominates(moving_element, target_element):
+        return True
+
+    return False
+
+
+def path_is_clear_for_element(board, piece, path, current_player: str) -> bool:
+    moving_element = piece.element
+
+    for row, col in path:
+        tile_type = board.get_tile(row, col)
+        if not element_can_enter_tile(moving_element, tile_type):
+            return False
+
+        occupying_piece = board.get_piece(row, col)
+        if occupying_piece is None:
+            continue
+
+        if occupying_piece.owner == current_player:
+            return False
+
+        if is_human_piece(occupying_piece):
+            return False
+
+        if is_element_piece(occupying_piece):
+            other_element = occupying_piece.element
+
+            if other_element == moving_element:
+                return False
+
+            if elements_are_equal(moving_element, other_element):
+                return False
+
+            if not element_dominates(moving_element, other_element):
+                return False
+
+    return True
+
+
+def element_target_is_valid(board, piece, to_row: int, to_col: int, current_player: str) -> bool:
+    moving_element = piece.element
+    target_tile = board.get_tile(to_row, to_col)
+
+    if not element_can_enter_tile(moving_element, target_tile):
         return False
 
     target_piece = board.get_piece(to_row, to_col)
@@ -71,7 +235,21 @@ def is_legal_human_move(
     if target_piece.owner == current_player:
         return False
 
-    return True
+    if is_human_piece(target_piece):
+        return False
+
+    if is_element_piece(target_piece):
+        other_element = target_piece.element
+
+        if other_element == moving_element:
+            return False
+
+        if elements_are_equal(moving_element, other_element):
+            return False
+
+        return element_dominates(moving_element, other_element)
+
+    return False
 
 
 def is_legal_element_move(
@@ -84,24 +262,23 @@ def is_legal_element_move(
     current_player: str,
 ) -> bool:
     """
-    Prototype rule for Element piece:
-    - can move 1 square in any direction
-    - can move into empty square
-    - can capture opponent
-    - cannot land on own piece
+    Origins-style element rule:
+    - move any distance in straight line
+    - can travel through neutral tiles
+    - interacts with element tiles by dominance/equality rules
+    - cannot pass through blocking pieces
     """
-    row_diff = abs(to_row - from_row)
-    col_diff = abs(to_col - from_col)
-
-    if row_diff > 1 or col_diff > 1 or (row_diff == 0 and col_diff == 0):
+    if not is_straight_line_move(from_row, from_col, to_row, to_col):
         return False
 
-    target_piece = board.get_piece(to_row, to_col)
+    path = get_path_squares(from_row, from_col, to_row, to_col)
+    if path is None:
+        return False
 
-    if target_piece is None:
-        return True
+    if not path_is_clear_for_element(board, piece, path, current_player):
+        return False
 
-    if target_piece.owner == current_player:
+    if not element_target_is_valid(board, piece, to_row, to_col, current_player):
         return False
 
     return True
@@ -157,17 +334,41 @@ def is_legal_move(
     return False
 
 
-def get_candidate_destinations(from_row: int, from_col: int) -> list[tuple[int, int]]:
-    """
-    Only check nearby squares instead of scanning the whole board.
-    """
+def get_candidate_destinations(board, piece, from_row: int, from_col: int):
     candidates = []
 
-    for row_offset in (-1, 0, 1):
-        for col_offset in (-1, 0, 1):
-            if row_offset == 0 and col_offset == 0:
-                continue
-            candidates.append((from_row + row_offset, from_col + col_offset))
+    if is_human_piece(piece):
+        for to_row in range(board.size):
+            for to_col in range(board.size):
+                if (to_row, to_col) != (from_row, from_col):
+                    candidates.append((to_row, to_col))
+        return candidates
+
+    if is_element_piece(piece):
+        directions = [
+            (-1, 0),
+            (1, 0),
+            (0, -1),
+            (0, 1),
+            (-1, -1),
+            (-1, 1),
+            (1, -1),
+            (1, 1),
+        ]
+
+        for d_row, d_col in directions:
+            step = 1
+            while True:
+                new_row = from_row + d_row * step
+                new_col = from_col + d_col * step
+
+                if not is_within_bounds(new_row, new_col, board.size):
+                    break
+
+                candidates.append((new_row, new_col))
+                step += 1
+
+        return candidates
 
     return candidates
 
@@ -185,7 +386,12 @@ def get_legal_moves_for_player(board, current_player: str) -> list[Move]:
             if piece.owner != current_player:
                 continue
 
-            candidate_destinations = get_candidate_destinations(from_row, from_col)
+            candidate_destinations = get_candidate_destinations(
+                board,
+                piece,
+                from_row,
+                from_col,
+            )
 
             for to_row, to_col in candidate_destinations:
                 if not is_within_bounds(to_row, to_col, board.size):

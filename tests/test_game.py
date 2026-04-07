@@ -6,37 +6,88 @@ from src.constants import (
     NORMAL_MOVE_REWARD,
     ILLEGAL_MOVE_PENALTY,
     WIN_REWARD,
+    MALE_PIECE,
+    FEMALE_PIECE,
+    ELEMENT_PIECE,
+    NEUTRAL_TILE,
+    EARTH_TILE,
 )
 
 
 def test_game_starts_with_player_1():
-    game = Game(board_size=4)
+    game = Game(board_size=8)
     assert game.current_player == PLAYER_1
 
 
-def test_initial_piece_positions():
-    game = Game(board_size=4)
-    assert game.board.get_piece(0, 0) is not None
-    assert game.board.get_piece(0, 1) is not None
-    assert game.board.get_piece(0, 2) is not None
-    assert game.board.get_piece(3, 3) is not None
-    assert game.board.get_piece(3, 2) is not None
-    assert game.board.get_piece(3, 1) is not None
+def test_initial_piece_positions_8x8():
+    game = Game(board_size=8)
+
+    player_1_count = 0
+    player_2_count = 0
+
+    for row in range(game.board.size):
+        for col in range(game.board.size):
+            piece = game.board.get_piece(row, col)
+            if piece is None:
+                continue
+            if piece.owner == PLAYER_1:
+                player_1_count += 1
+            elif piece.owner == PLAYER_2:
+                player_2_count += 1
+
+    assert player_1_count == 10
+    assert player_2_count == 10
 
 
-def test_legal_moves_exist_for_player_1():
-    game = Game(board_size=4)
+def test_board_has_tiles_8x8():
+    game = Game(board_size=8)
+
+    for row in range(game.board.size):
+        for col in range(game.board.size):
+            tile = game.board.get_tile(row, col)
+            assert tile is not None
+
+
+def test_legal_moves_exist_for_player_1_on_8x8():
+    game = Game(board_size=8)
     legal_moves = game.get_legal_moves()
     assert len(legal_moves) > 0
 
 
-def test_successful_move_switches_turn():
-    game = Game(board_size=4)
-    moved, reward = game.make_move(0, 0, 1, 0)
+def test_4x4_environment_reset_returns_valid_state():
+    env = OriginsEnv(board_size=4)
+    state = env.reset()
 
-    assert moved is True
-    assert reward == NORMAL_MOVE_REWARD
-    assert game.current_player == PLAYER_2
+    assert isinstance(state, tuple)
+    assert len(state) == 17
+
+
+def test_4x4_environment_returns_valid_actions():
+    env = OriginsEnv(board_size=4)
+    env.reset()
+    actions = env.get_valid_actions()
+
+    assert isinstance(actions, list)
+    assert len(actions) > 0
+    assert all(len(action) == 4 for action in actions)
+
+
+def test_4x4_environment_step_returns_correct_format():
+    env = OriginsEnv(board_size=4)
+    env.reset()
+    actions = env.get_valid_actions()
+
+    next_state, reward, done, info = env.step(actions[0])
+
+    assert isinstance(next_state, tuple)
+    assert len(next_state) == 17
+    assert isinstance(reward, float)
+    assert isinstance(done, bool)
+    assert isinstance(info, dict)
+    assert "success" in info
+    assert "current_player" in info
+    assert "winner" in info
+    assert "steps" in info
 
 
 def test_illegal_move_fails():
@@ -48,69 +99,85 @@ def test_illegal_move_fails():
     assert game.current_player == PLAYER_1
 
 
-def test_environment_reset_returns_valid_state():
-    env = OriginsEnv(board_size=4)
-    state = env.reset()
+def test_element_move_can_convert_neutral_tile():
+    game = Game(board_size=8)
 
-    assert isinstance(state, tuple)
-    assert len(state) == 16
-    assert state.count(1) == 3
-    assert state.count(2) == 3
+    # clear board
+    game.board.reset()
 
+    element_piece = None
+    for row in range(game.board.size):
+        for col in range(game.board.size):
+            piece = game.board.get_piece(row, col)
+            if piece is not None and piece.owner == PLAYER_1 and piece.piece_type == ELEMENT_PIECE:
+                element_piece = piece
 
-def test_environment_returns_valid_actions():
-    env = OriginsEnv(board_size=4)
-    env.reset()
-    actions = env.get_valid_actions()
+    if element_piece is None:
+        element_piece = game.board.get_piece(0, 2)
+    if element_piece is None:
+        from src.pieces import Piece
+        from src.constants import PLAYER_1_ELEMENT_SYMBOL, EARTH
+        element_piece = Piece(ELEMENT_PIECE, PLAYER_1, PLAYER_1_ELEMENT_SYMBOL, element=EARTH)
 
-    assert isinstance(actions, list)
-    assert len(actions) > 0
-    assert all(len(action) == 4 for action in actions)
+    game.board.place_piece(3, 3, element_piece)
+    game.board.set_tile(4, 3, NEUTRAL_TILE)
+    game.board.set_tile(5, 3, NEUTRAL_TILE)
 
-
-def test_environment_step_returns_correct_format():
-    env = OriginsEnv(board_size=4)
-    env.reset()
-    actions = env.get_valid_actions()
-
-    next_state, reward, done, info = env.step(actions[0])
-
-    assert isinstance(next_state, tuple)
-    assert len(next_state) == 16
-    assert isinstance(reward, int)
-    assert isinstance(done, bool)
-    assert isinstance(info, dict)
-    assert "success" in info
-    assert "current_player" in info
-    assert "winner" in info
-
-
-def test_winning_move_sets_game_over_and_winner():
-    game = Game(board_size=4)
-
-    piece = game.board.get_piece(0, 0)
-    game.board.grid[0][0] = None
-    game.board.grid[2][2] = piece
-    game.board.grid[3][3] = None
-
-    moved, reward = game.make_move(2, 2, 3, 3)
+    moved, reward = game.make_move(3, 3, 5, 3)
 
     assert moved is True
-    assert reward == WIN_REWARD
+    assert game.board.get_tile(4, 3) == EARTH_TILE
+
+
+def test_element_move_can_capture_weaker_element_on_path():
+    game = Game(board_size=8)
+    game.board.reset()
+
+    from src.pieces import Piece
+    from src.constants import (
+        PLAYER_1_ELEMENT_SYMBOL,
+        PLAYER_2_ELEMENT_SYMBOL,
+        EARTH,
+        WATER,
+    )
+
+    attacker = Piece(ELEMENT_PIECE, PLAYER_1, PLAYER_1_ELEMENT_SYMBOL, element=EARTH)
+    victim = Piece(ELEMENT_PIECE, PLAYER_2, PLAYER_2_ELEMENT_SYMBOL, element=WATER)
+
+    game.board.place_piece(3, 3, attacker)
+    game.board.place_piece(4, 3, victim)
+    game.board.set_tile(4, 3, EARTH_TILE)
+
+    moved, reward = game.make_move(3, 3, 5, 3)
+
+    assert moved is True
+    assert game.board.get_piece(4, 3) is None
+
+
+def test_player_1_wins_when_both_humans_reach_destination():
+    game = Game(board_size=8)
+    game.board.reset()
+
+    from src.pieces import Piece
+    from src.constants import PLAYER_1_MALE_SYMBOL, PLAYER_1_FEMALE_SYMBOL
+
+    male = Piece(MALE_PIECE, PLAYER_1, PLAYER_1_MALE_SYMBOL)
+    female = Piece(FEMALE_PIECE, PLAYER_1, PLAYER_1_FEMALE_SYMBOL)
+
+    game.board.place_piece(7, 0, male)
+    game.board.place_piece(7, 1, female)
+
+    game.check_winner()
+
     assert game.game_over is True
     assert game.winner == PLAYER_1
 
 
-def test_environment_step_sets_done_true_on_win():
-    env = OriginsEnv(board_size=4)
+def test_draw_when_both_players_lose_required_humans():
+    game = Game(board_size=8)
+    game.board.reset()
 
-    piece = env.game.board.get_piece(0, 0)
-    env.game.board.grid[0][0] = None
-    env.game.board.grid[2][2] = piece
-    env.game.board.grid[3][3] = None
+    game.check_winner()
 
-    next_state, reward, done, info = env.step((2, 2, 3, 3))
-
-    assert reward == WIN_REWARD
-    assert done is True
-    assert info["success"] is True
+    assert game.game_over is True
+    assert game.winner is None

@@ -1,12 +1,26 @@
 from src.board import Board
 from src.pieces import Piece
-from src.rules import is_legal_move, get_legal_moves_for_player
+from src.rules import (
+    is_legal_move,
+    get_legal_moves_for_player,
+    get_path_squares,
+    is_element_piece,
+    is_human_piece,
+    element_dominates,
+    elements_are_equal,
+    get_tile_element,
+    ELEMENT_TO_TILE,
+)
 from src.constants import (
     PLAYER_1,
     PLAYER_2,
     MALE_PIECE,
     FEMALE_PIECE,
     ELEMENT_PIECE,
+    EARTH,
+    WATER,
+    FIRE,
+    AIR,
     PLAYER_1_MALE_SYMBOL,
     PLAYER_1_FEMALE_SYMBOL,
     PLAYER_1_ELEMENT_SYMBOL,
@@ -16,6 +30,13 @@ from src.constants import (
     WIN_REWARD,
     ILLEGAL_MOVE_PENALTY,
     NORMAL_MOVE_REWARD,
+    EARTH_TILE,
+    WATER_TILE,
+    FIRE_TILE,
+    AIR_TILE,
+    NEUTRAL_TILE,
+    PROTOTYPE_MAX_STEPS,
+    FULL_GAME_MAX_STEPS,
 )
 
 
@@ -27,8 +48,10 @@ class Game:
         self.game_over = False
         self.winner = None
         self.steps = 0
-        self.max_steps = 50
-        self.setup_board()
+        self.max_steps = (
+            FULL_GAME_MAX_STEPS if board_size == 8 else PROTOTYPE_MAX_STEPS
+        )
+        self.reset()
 
     def reset(self) -> None:
         self.board = Board(size=self.board_size)
@@ -36,28 +59,94 @@ class Game:
         self.game_over = False
         self.winner = None
         self.steps = 0
+        self.setup_tiles()
         self.setup_board()
+
+    def setup_tiles(self) -> None:
+        """
+        Basic 8x8 Origins-style tile layout.
+        Refine later if your official board pattern differs.
+        """
+        tile_layout = [
+            [EARTH_TILE, WATER_TILE, FIRE_TILE, AIR_TILE, EARTH_TILE, WATER_TILE, FIRE_TILE, AIR_TILE],
+            [AIR_TILE, EARTH_TILE, WATER_TILE, FIRE_TILE, AIR_TILE, EARTH_TILE, WATER_TILE, FIRE_TILE],
+            [FIRE_TILE, AIR_TILE, EARTH_TILE, WATER_TILE, FIRE_TILE, AIR_TILE, EARTH_TILE, WATER_TILE],
+            [WATER_TILE, FIRE_TILE, AIR_TILE, EARTH_TILE, WATER_TILE, FIRE_TILE, AIR_TILE, EARTH_TILE],
+            [EARTH_TILE, WATER_TILE, FIRE_TILE, AIR_TILE, EARTH_TILE, WATER_TILE, FIRE_TILE, AIR_TILE],
+            [AIR_TILE, EARTH_TILE, WATER_TILE, FIRE_TILE, AIR_TILE, EARTH_TILE, WATER_TILE, FIRE_TILE],
+            [FIRE_TILE, AIR_TILE, EARTH_TILE, WATER_TILE, FIRE_TILE, AIR_TILE, EARTH_TILE, WATER_TILE],
+            [WATER_TILE, FIRE_TILE, AIR_TILE, EARTH_TILE, WATER_TILE, FIRE_TILE, AIR_TILE, EARTH_TILE],
+        ]
+
+        if self.board.size != 8:
+            return
+
+        for row in range(8):
+            for col in range(8):
+                self.board.set_tile(row, col, tile_layout[row][col])
 
     def setup_board(self) -> None:
         last = self.board.size - 1
 
-        # Player 1 pieces (top row)
-        self.board.place_piece(0, 0, Piece(MALE_PIECE, PLAYER_1, PLAYER_1_MALE_SYMBOL))
-        self.board.place_piece(0, 1, Piece(FEMALE_PIECE, PLAYER_1, PLAYER_1_FEMALE_SYMBOL))
-        self.board.place_piece(
-            0,
-            2,
-            Piece(ELEMENT_PIECE, PLAYER_1, PLAYER_1_ELEMENT_SYMBOL, element="earth"),
-        )
+        if self.board.size == 8:
+            player_1_pieces = [
+                Piece(MALE_PIECE, PLAYER_1, PLAYER_1_MALE_SYMBOL),
+                Piece(FEMALE_PIECE, PLAYER_1, PLAYER_1_FEMALE_SYMBOL),
+                Piece(ELEMENT_PIECE, PLAYER_1, PLAYER_1_ELEMENT_SYMBOL, element=EARTH),
+                Piece(ELEMENT_PIECE, PLAYER_1, PLAYER_1_ELEMENT_SYMBOL, element=EARTH),
+                Piece(ELEMENT_PIECE, PLAYER_1, PLAYER_1_ELEMENT_SYMBOL, element=WATER),
+                Piece(ELEMENT_PIECE, PLAYER_1, PLAYER_1_ELEMENT_SYMBOL, element=WATER),
+                Piece(ELEMENT_PIECE, PLAYER_1, PLAYER_1_ELEMENT_SYMBOL, element=FIRE),
+                Piece(ELEMENT_PIECE, PLAYER_1, PLAYER_1_ELEMENT_SYMBOL, element=FIRE),
+                Piece(ELEMENT_PIECE, PLAYER_1, PLAYER_1_ELEMENT_SYMBOL, element=AIR),
+                Piece(ELEMENT_PIECE, PLAYER_1, PLAYER_1_ELEMENT_SYMBOL, element=AIR),
+            ]
 
-        # Player 2 pieces (bottom row)
-        self.board.place_piece(last, last, Piece(MALE_PIECE, PLAYER_2, PLAYER_2_MALE_SYMBOL))
-        self.board.place_piece(last, last - 1, Piece(FEMALE_PIECE, PLAYER_2, PLAYER_2_FEMALE_SYMBOL))
-        self.board.place_piece(
-            last,
-            last - 2,
-            Piece(ELEMENT_PIECE, PLAYER_2, PLAYER_2_ELEMENT_SYMBOL, element="earth"),
-        )
+            player_2_pieces = [
+                Piece(MALE_PIECE, PLAYER_2, PLAYER_2_MALE_SYMBOL),
+                Piece(FEMALE_PIECE, PLAYER_2, PLAYER_2_FEMALE_SYMBOL),
+                Piece(ELEMENT_PIECE, PLAYER_2, PLAYER_2_ELEMENT_SYMBOL, element=EARTH),
+                Piece(ELEMENT_PIECE, PLAYER_2, PLAYER_2_ELEMENT_SYMBOL, element=EARTH),
+                Piece(ELEMENT_PIECE, PLAYER_2, PLAYER_2_ELEMENT_SYMBOL, element=WATER),
+                Piece(ELEMENT_PIECE, PLAYER_2, PLAYER_2_ELEMENT_SYMBOL, element=WATER),
+                Piece(ELEMENT_PIECE, PLAYER_2, PLAYER_2_ELEMENT_SYMBOL, element=FIRE),
+                Piece(ELEMENT_PIECE, PLAYER_2, PLAYER_2_ELEMENT_SYMBOL, element=FIRE),
+                Piece(ELEMENT_PIECE, PLAYER_2, PLAYER_2_ELEMENT_SYMBOL, element=AIR),
+                Piece(ELEMENT_PIECE, PLAYER_2, PLAYER_2_ELEMENT_SYMBOL, element=AIR),
+            ]
+
+            player_1_positions = [
+                (0, 0), (0, 1), (0, 2), (0, 3), (0, 4),
+                (0, 5), (0, 6), (0, 7), (1, 3), (1, 4),
+            ]
+
+            player_2_positions = [
+                (7, 7), (7, 6), (7, 5), (7, 4), (7, 3),
+                (7, 2), (7, 1), (7, 0), (6, 4), (6, 3),
+            ]
+
+            for piece, (row, col) in zip(player_1_pieces, player_1_positions):
+                self.board.place_piece(row, col, piece)
+
+            for piece, (row, col) in zip(player_2_pieces, player_2_positions):
+                self.board.place_piece(row, col, piece)
+
+        else:
+            self.board.place_piece(0, 0, Piece(MALE_PIECE, PLAYER_1, PLAYER_1_MALE_SYMBOL))
+            self.board.place_piece(0, 1, Piece(FEMALE_PIECE, PLAYER_1, PLAYER_1_FEMALE_SYMBOL))
+            self.board.place_piece(
+                0,
+                2,
+                Piece(ELEMENT_PIECE, PLAYER_1, PLAYER_1_ELEMENT_SYMBOL, element=EARTH),
+            )
+
+            self.board.place_piece(last, last, Piece(MALE_PIECE, PLAYER_2, PLAYER_2_MALE_SYMBOL))
+            self.board.place_piece(last, last - 1, Piece(FEMALE_PIECE, PLAYER_2, PLAYER_2_FEMALE_SYMBOL))
+            self.board.place_piece(
+                last,
+                last - 2,
+                Piece(ELEMENT_PIECE, PLAYER_2, PLAYER_2_ELEMENT_SYMBOL, element=EARTH),
+            )
 
     def switch_turn(self) -> None:
         if self.current_player == PLAYER_1:
@@ -65,36 +154,62 @@ class Game:
         else:
             self.current_player = PLAYER_1
 
-    def check_winner(self) -> None:
-        """
-        Prototype win rule:
-        - Player 1 wins if male OR female reaches the bottom row
-        - Player 2 wins if male OR female reaches the top row
-        """
-        last = self.board.size - 1
+    def player_has_required_humans(self, player: str) -> bool:
+        male_exists = False
+        female_exists = False
+
+        for row in range(self.board.size):
+            for col in range(self.board.size):
+                piece = self.board.get_piece(row, col)
+                if piece is None or piece.owner != player:
+                    continue
+
+                if piece.piece_type == MALE_PIECE:
+                    male_exists = True
+                elif piece.piece_type == FEMALE_PIECE:
+                    female_exists = True
+
+        return male_exists and female_exists
+
+    def humans_on_destination_row(self, player: str) -> tuple[bool, bool]:
+        target_row = self.board.size - 1 if player == PLAYER_1 else 0
+        male_on_goal = False
+        female_on_goal = False
 
         for col in range(self.board.size):
-            top_piece = self.board.get_piece(0, col)
-            bottom_piece = self.board.get_piece(last, col)
+            piece = self.board.get_piece(target_row, col)
+            if piece is None or piece.owner != player:
+                continue
 
-            # Player 1 goal = bottom row
-            if bottom_piece and bottom_piece.owner == PLAYER_1:
-                if bottom_piece.piece_type in (MALE_PIECE, FEMALE_PIECE):
-                    self.game_over = True
-                    self.winner = PLAYER_1
-                    return
+            if piece.piece_type == MALE_PIECE:
+                male_on_goal = True
+            elif piece.piece_type == FEMALE_PIECE:
+                female_on_goal = True
 
-            # Player 2 goal = top row
-            if top_piece and top_piece.owner == PLAYER_2:
-                if top_piece.piece_type in (MALE_PIECE, FEMALE_PIECE):
-                    self.game_over = True
-                    self.winner = PLAYER_2
-                    return
+        return male_on_goal, female_on_goal
+
+    def check_winner(self) -> None:
+        p1_has_both = self.player_has_required_humans(PLAYER_1)
+        p2_has_both = self.player_has_required_humans(PLAYER_2)
+
+        if not p1_has_both and not p2_has_both:
+            self.game_over = True
+            self.winner = None
+            return
+
+        p1_male_goal, p1_female_goal = self.humans_on_destination_row(PLAYER_1)
+        if p1_has_both and p1_male_goal and p1_female_goal:
+            self.game_over = True
+            self.winner = PLAYER_1
+            return
+
+        p2_male_goal, p2_female_goal = self.humans_on_destination_row(PLAYER_2)
+        if p2_has_both and p2_male_goal and p2_female_goal:
+            self.game_over = True
+            self.winner = PLAYER_2
+            return
 
     def check_no_moves_draw(self) -> None:
-        """
-        If the current player has no legal moves, the game is a draw.
-        """
         if self.game_over:
             return
 
@@ -103,42 +218,106 @@ class Game:
             self.game_over = True
             self.winner = None
 
+    def neutralise_tile_and_capture_if_needed(self, row: int, col: int) -> None:
+        """
+        If a tile becomes neutral and a human piece is standing there,
+        that human piece is captured.
+        """
+        self.board.set_tile(row, col, NEUTRAL_TILE)
+
+        piece = self.board.get_piece(row, col)
+        if piece is not None and is_human_piece(piece):
+            self.board.remove_piece(row, col)
+
+    def apply_element_effects_along_path(self, moving_piece, path) -> None:
+        """
+        Apply Origins-style path effects for element movement:
+        - neutral squares become the moving element tile
+        - weaker element tiles are neutralised
+        - weaker element pieces can be captured by passing over
+        - human pieces can be captured if their tile is neutralised
+        """
+        moving_element = moving_piece.element
+        moving_tile = ELEMENT_TO_TILE[moving_element]
+
+        for row, col in path:
+            tile_type = self.board.get_tile(row, col)
+            occupying_piece = self.board.get_piece(row, col)
+
+            if tile_type == NEUTRAL_TILE:
+                self.board.set_tile(row, col, moving_tile)
+            else:
+                tile_element = get_tile_element(tile_type)
+                if tile_element is not None and element_dominates(moving_element, tile_element):
+                    self.neutralise_tile_and_capture_if_needed(row, col)
+
+            if occupying_piece is None:
+                continue
+
+            if is_element_piece(occupying_piece):
+                other_element = occupying_piece.element
+                if other_element != moving_element and not elements_are_equal(moving_element, other_element):
+                    if element_dominates(moving_element, other_element):
+                        self.board.remove_piece(row, col)
+
+    def apply_element_effects_on_target(self, moving_piece, to_row: int, to_col: int) -> None:
+        moving_element = moving_piece.element
+        moving_tile = ELEMENT_TO_TILE[moving_element]
+
+        target_tile = self.board.get_tile(to_row, to_col)
+
+        if target_tile == NEUTRAL_TILE:
+            self.board.set_tile(to_row, to_col, moving_tile)
+        else:
+            tile_element = get_tile_element(target_tile)
+            if tile_element is not None and element_dominates(moving_element, tile_element):
+                self.neutralise_tile_and_capture_if_needed(to_row, to_col)
+
+        target_piece = self.board.get_piece(to_row, to_col)
+
+        if target_piece is not None and is_element_piece(target_piece):
+            if target_piece.element != moving_element and element_dominates(
+                moving_element, target_piece.element
+            ):
+                self.board.remove_piece(to_row, to_col)
+
     def make_move(self, from_row: int, from_col: int, to_row: int, to_col: int):
         if self.game_over:
             return False, 0
 
         piece = self.board.get_piece(from_row, from_col)
 
-        # Prevent invalid selection
         if piece is None or piece.owner != self.current_player:
             return False, ILLEGAL_MOVE_PENALTY
 
-        # Check legality
         if not is_legal_move(
             self.board, from_row, from_col, to_row, to_col, self.current_player
         ):
             return False, ILLEGAL_MOVE_PENALTY
 
-        # Apply move
+        if is_element_piece(piece):
+            path = get_path_squares(from_row, from_col, to_row, to_col)
+            if path is None:
+                return False, ILLEGAL_MOVE_PENALTY
+
+            self.apply_element_effects_along_path(piece, path)
+            self.apply_element_effects_on_target(piece, to_row, to_col)
+
         self.board.move_piece(from_row, from_col, to_row, to_col)
         self.steps += 1
 
-        # Check winner after move
         self.check_winner()
         if self.game_over:
             return True, WIN_REWARD
 
-        # Max step termination
         if self.steps >= self.max_steps:
             self.game_over = True
             self.winner = None
             return True, 0
 
-        # Switch turn
         self.switch_turn()
-
-        # Check whether the next player has no legal moves
         self.check_no_moves_draw()
+
         if self.game_over:
             return True, 0
 

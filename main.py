@@ -23,7 +23,22 @@ def print_last_training_info(agent, rewards, steps, p1_wins, p2_wins, draws):
     print(f"Last 10 draws: {draws[-10:]}")
 
 
+def choose_board_size():
+    print("\nChoose board size:")
+    print("1. 4x4 (recommended for trained RL prototype)")
+    print("2. 8x8 (full playable engine)")
+    choice = input("Enter 1 or 2: ").strip()
+
+    if choice == "2":
+        return 8
+    return 4
+
+
 def train_and_save_agent():
+    """
+    Keep RL training on 4x4 because tabular Q-learning does not
+    scale well to the full 8x8 state space.
+    """
     (
         agent,
         rewards,
@@ -31,7 +46,7 @@ def train_and_save_agent():
         p1_wins,
         p2_wins,
         draws,
-    ) = train_q_learning(episodes=300)
+    ) = train_q_learning(episodes=300, board_size=4)
 
     print_last_training_info(agent, rewards, steps, p1_wins, p2_wins, draws)
 
@@ -48,13 +63,14 @@ def load_agent():
     return agent
 
 
-def run_evaluations(agent):
+def run_evaluations(agent, board_size=4):
     print("\nRunning evaluations...")
     print("=" * 50)
+    print(f"Board size: {board_size}x{board_size}")
 
-    evaluate_self_play(agent, episodes=100)
-    evaluate_agent_fair(agent, episodes_each_side=100)
-    evaluate_random_vs_random(episodes=100)
+    evaluate_self_play(agent, episodes=100, board_size=board_size)
+    evaluate_agent_fair(agent, episodes_each_side=100, board_size=board_size)
+    evaluate_random_vs_random(episodes=100, board_size=board_size)
 
 
 def parse_human_move(user_input: str):
@@ -69,12 +85,12 @@ def parse_human_move(user_input: str):
         return None
 
 
-def human_vs_ai(agent):
+def human_vs_ai(agent, board_size=4):
     """
     Human plays as Player 1
     AI plays as Player 2
     """
-    env = OriginsEnv(board_size=4)
+    env = OriginsEnv(board_size=board_size)
 
     old_epsilon = agent.epsilon
     agent.epsilon = 0.0
@@ -83,9 +99,15 @@ def human_vs_ai(agent):
     done = False
 
     print("\nHuman vs AI started!")
+    print(f"Board size: {board_size}x{board_size}")
     print("You are Player1.")
     print("Enter moves as: from_row from_col to_row to_col")
     print("Example: 0 0 1 0")
+
+    if board_size == 8:
+        print("\nNote: the full 8x8 engine is playable,")
+        print("but the loaded Q-learning agent was trained on the 4x4 prototype.")
+        print("So AI quality on 8x8 may be limited.\n")
 
     while not done:
         env.render()
@@ -143,8 +165,8 @@ def human_vs_ai(agent):
     agent.epsilon = old_epsilon
 
 
-def ai_vs_ai(agent):
-    env = OriginsEnv(board_size=4)
+def ai_vs_ai(agent, board_size=4):
+    env = OriginsEnv(board_size=board_size)
 
     old_epsilon = agent.epsilon
     agent.epsilon = 0.0
@@ -153,6 +175,12 @@ def ai_vs_ai(agent):
     done = False
 
     print("\nAI vs AI started!")
+    print(f"Board size: {board_size}x{board_size}")
+
+    if board_size == 8:
+        print("\nNote: the full 8x8 engine is playable,")
+        print("but the loaded Q-learning agent was trained on the 4x4 prototype.")
+        print("So AI quality on 8x8 may be limited.\n")
 
     while not done:
         env.render()
@@ -190,7 +218,7 @@ def main():
         print("\n" + "=" * 50)
         print("ORIGINS AI PROJECT")
         print("=" * 50)
-        print("1. Train new agent and save")
+        print("1. Train new agent and save (4x4 RL prototype)")
         print("2. Load saved agent")
         print("3. Evaluate loaded agent")
         print("4. Play Human vs AI")
@@ -211,21 +239,24 @@ def main():
         elif choice == "3":
             try:
                 agent = load_agent()
-                run_evaluations(agent)
+                board_size = choose_board_size()
+                run_evaluations(agent, board_size=board_size)
             except FileNotFoundError:
                 print(f"No saved model found at: {MODEL_PATH}")
 
         elif choice == "4":
             try:
                 agent = load_agent()
-                human_vs_ai(agent)
+                board_size = choose_board_size()
+                human_vs_ai(agent, board_size=board_size)
             except FileNotFoundError:
                 print(f"No saved model found at: {MODEL_PATH}")
 
         elif choice == "5":
             try:
                 agent = load_agent()
-                ai_vs_ai(agent)
+                board_size = choose_board_size()
+                ai_vs_ai(agent, board_size=board_size)
             except FileNotFoundError:
                 print(f"No saved model found at: {MODEL_PATH}")
 
