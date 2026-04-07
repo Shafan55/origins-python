@@ -74,12 +74,36 @@ def train_q_learning(episodes: int = 500):
 
         while not done and step_count < max_steps:
             valid_actions = env.get_valid_actions()
+
+            # ✅ SMART ACTION PRUNING
+            MAX_ACTIONS = 10
+            if len(valid_actions) > MAX_ACTIONS:
+                valid_actions = sorted(
+                    valid_actions,
+                    key=lambda a: agent.get_q_value(state, a),
+                    reverse=True
+                )[:MAX_ACTIONS]
+
             action = agent.choose_action(state, valid_actions)
 
             if action is None:
                 break
 
             next_state, reward, done, info = env.step(action)
+
+            original_reward = reward
+
+            if not done:
+                reward -= 0.01
+
+            if done:
+                if original_reward > 0:
+                    reward = 1.0
+                elif original_reward < 0:
+                    reward = -1.0
+                else:
+                    reward = 0.0
+
             next_valid_actions = env.get_valid_actions()
 
             agent.update_q_value(state, action, reward, next_state, next_valid_actions)
@@ -88,8 +112,12 @@ def train_q_learning(episodes: int = 500):
             total_reward += reward
             step_count += 1
 
-            if done and reward > 0:
+            if done and original_reward > 0:
                 win_count += 1
+
+        # timeout penalty
+        if not done:
+            agent.update_q_value(state, action, -1.0, state, [])
 
         agent.decay_epsilon()
         episode_rewards.append(total_reward)
@@ -126,7 +154,7 @@ def train_q_learning(episodes: int = 500):
     return agent, episode_rewards, episode_steps
 
 
-def evaluate_agent(agent, episodes: int = 3):
+def evaluate_agent(agent, episodes: int = 100, render: bool = False):
     env = OriginsEnv(board_size=4)
 
     print("\nEVALUATION RUNS")
@@ -135,45 +163,65 @@ def evaluate_agent(agent, episodes: int = 3):
     old_epsilon = agent.epsilon
     agent.epsilon = 0.0
 
-    wins = 0
+    metrics = {
+        "wins": 0,
+        "draws": 0,
+        "unfinished": 0,
+        "total_steps": 0,
+    }
 
     for episode in range(episodes):
         state = env.reset()
         done = False
         step_count = 0
-        max_steps = 20
+        max_steps = 50
         final_reward = 0
-
-        print(f"\nEvaluation Episode {episode + 1}")
-        env.render()
 
         while not done and step_count < max_steps:
             valid_actions = env.get_valid_actions()
+
+            MAX_ACTIONS = 10
+            if len(valid_actions) > MAX_ACTIONS:
+                valid_actions = sorted(
+                    valid_actions,
+                    key=lambda a: agent.get_q_value(state, a),
+                    reverse=True
+                )[:MAX_ACTIONS]
+
             action = agent.choose_action(state, valid_actions)
 
             if action is None:
-                print("No valid actions available.")
                 break
 
-            print(f"\nChosen action: {action}")
             next_state, reward, done, info = env.step(action)
             final_reward = reward
-
-            print(f"Reward: {reward} | Done: {done} | Info: {info}")
-            env.render()
 
             state = next_state
             step_count += 1
 
-        if done and final_reward > 0:
-            wins += 1
+        if not done:
+            metrics["unfinished"] += 1
+        elif final_reward > 0:
+            metrics["wins"] += 1
+        elif final_reward == 0:
+            metrics["draws"] += 1
 
-        print(f"Episode finished in {step_count} steps.")
+        metrics["total_steps"] += step_count
 
     print("\nEVALUATION SUMMARY")
     print("=" * 40)
-    print(f"Wins: {wins}/{episodes}")
-    print(f"Evaluation win rate: {(wins / episodes) * 100:.2f}%")
+
+    win_rate = (metrics["wins"] / episodes) * 100
+    unfinished_rate = (metrics["unfinished"] / episodes) * 100
+    avg_steps = metrics["total_steps"] / episodes
+    losses = episodes - metrics["wins"] - metrics["draws"] - metrics["unfinished"]
+
+    print(f"Episodes: {episodes}")
+    print(f"Wins: {metrics['wins']} ({win_rate:.2f}%)")
+    print(f"Draws: {metrics['draws']} (0.00%)")
+    print(f"Unfinished: {metrics['unfinished']} ({unfinished_rate:.2f}%)")
+    print(f"Losses: {losses}")
+    print(f"Average steps: {avg_steps:.2f}")
 
     agent.epsilon = old_epsilon
 
@@ -186,7 +234,7 @@ def evaluate_random_agent(episodes: int = 20):
     print("\nRANDOM BASELINE EVALUATION")
     print("=" * 40)
 
-    for episode in range(episodes):
+    for _ in range(episodes):
         env.reset()
         done = False
         step_count = 0
@@ -244,6 +292,15 @@ def compare_agents(agent, trained_episodes: int = 20, random_episodes: int = 20)
 
         while not done and step_count < max_steps:
             valid_actions = env.get_valid_actions()
+
+            MAX_ACTIONS = 10
+            if len(valid_actions) > MAX_ACTIONS:
+                valid_actions = sorted(
+                    valid_actions,
+                    key=lambda a: agent.get_q_value(state, a),
+                    reverse=True
+                )[:MAX_ACTIONS]
+
             action = agent.choose_action(state, valid_actions)
 
             if action is None:

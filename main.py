@@ -11,7 +11,9 @@ def main():
     print(f"Last 10 episode rewards: {rewards[-10:]}")
     print(f"Last 10 episode steps: {steps[-10:]}")
 
-    evaluate_agent(agent, episodes=2)
+    # ✅ FIXED: increase evaluation sample size
+    evaluate_agent(agent, episodes=100)
+
     compare_agents(agent, trained_episodes=20, random_episodes=20)
 
 

@@ -6,9 +6,12 @@ class OriginsEnv:
     def __init__(self, board_size: int = 4):
         self.board_size = board_size
         self.game = Game(board_size=board_size)
+        self.max_steps = 40
+        self.current_step = 0
 
     def reset(self):
         self.game.reset()
+        self.current_step = 0
         return self.get_state()
 
     def get_state(self):
@@ -35,11 +38,23 @@ class OriginsEnv:
         return [move.to_tuple() for move in legal_moves]
 
     def step(self, action):
+        self.current_step += 1
+
         from_row, from_col, to_row, to_col = action
         success, reward = self.game.make_move(from_row, from_col, to_row, to_col)
 
         next_state = self.get_state()
+
+        # --- FIX 1: penalise invalid moves ---
+        if not success:
+            reward = -0.1
+
+        # --- FIX 2: force game termination on max steps ---
         done = self.game.game_over
+
+        if not done and self.current_step >= self.max_steps:
+            done = True
+            reward = -1.0  # treat as loss
 
         return next_state, reward, done, {
             "success": success,
