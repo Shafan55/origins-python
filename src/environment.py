@@ -8,7 +8,7 @@ class OriginsEnv:
         self.game = Game(board_size=board_size)
 
     def reset(self):
-        self.game = Game(board_size=self.board_size)
+        self.game.reset()
         return self.get_state()
 
     def get_state(self):
@@ -41,7 +41,11 @@ class OriginsEnv:
         next_state = self.get_state()
         done = self.game.game_over
 
-        return next_state, reward, done, {"success": success}
+        return next_state, reward, done, {
+            "success": success,
+            "current_player": self.game.current_player,
+            "winner": self.game.winner,
+        }
 
     def render(self):
         self.game.display()

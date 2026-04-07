@@ -6,16 +6,28 @@ class Board:
         self.size = size
         self.grid = [[None for _ in range(size)] for _ in range(size)]
 
+    def is_within_bounds(self, row: int, col: int) -> bool:
+        return 0 <= row < self.size and 0 <= col < self.size
+
+    def is_empty(self, row: int, col: int) -> bool:
+        return self.get_piece(row, col) is None
+
     def place_piece(self, row: int, col: int, piece: Piece) -> None:
         self.grid[row][col] = piece
 
     def get_piece(self, row: int, col: int):
         return self.grid[row][col]
 
+    def remove_piece(self, row: int, col: int) -> None:
+        self.grid[row][col] = None
+
     def move_piece(self, from_row: int, from_col: int, to_row: int, to_col: int) -> None:
         piece = self.grid[from_row][from_col]
         self.grid[from_row][from_col] = None
         self.grid[to_row][to_col] = piece
+
+    def reset(self) -> None:
+        self.grid = [[None for _ in range(self.size)] for _ in range(self.size)]
 
     def display(self) -> None:
         print("    " + "  ".join(str(col) for col in range(self.size)))

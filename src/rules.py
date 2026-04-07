@@ -5,11 +5,32 @@ def is_within_bounds(row: int, col: int, size: int) -> bool:
     return 0 <= row < size and 0 <= col < size
 
 
-def is_legal_move(board, from_row: int, from_col: int, to_row: int, to_col: int, current_player: str) -> bool:
+def is_same_position(from_row: int, from_col: int, to_row: int, to_col: int) -> bool:
+    return from_row == to_row and from_col == to_col
+
+
+def is_adjacent_move(from_row: int, from_col: int, to_row: int, to_col: int) -> bool:
+    row_diff = abs(to_row - from_row)
+    col_diff = abs(to_col - from_col)
+
+    return row_diff <= 1 and col_diff <= 1 and not (row_diff == 0 and col_diff == 0)
+
+
+def is_legal_move(
+    board,
+    from_row: int,
+    from_col: int,
+    to_row: int,
+    to_col: int,
+    current_player: str,
+) -> bool:
     if not is_within_bounds(from_row, from_col, board.size):
         return False
 
     if not is_within_bounds(to_row, to_col, board.size):
+        return False
+
+    if is_same_position(from_row, from_col, to_row, to_col):
         return False
 
     piece = board.get_piece(from_row, from_col)
@@ -20,18 +41,16 @@ def is_legal_move(board, from_row: int, from_col: int, to_row: int, to_col: int,
     if piece.owner != current_player:
         return False
 
-    row_diff = abs(to_row - from_row)
-    col_diff = abs(to_col - from_col)
-
-    if row_diff == 0 and col_diff == 0:
+    if not is_adjacent_move(from_row, from_col, to_row, to_col):
         return False
 
-    if row_diff <= 1 and col_diff <= 1:
-        target_piece = board.get_piece(to_row, to_col)
-        if target_piece is None:
-            return True
+    target_piece = board.get_piece(to_row, to_col)
 
-    return False
+    # Current prototype rule: can only move to empty squares
+    if target_piece is not None:
+        return False
+
+    return True
 
 
 def get_legal_moves_for_player(board, current_player: str) -> list[Move]:

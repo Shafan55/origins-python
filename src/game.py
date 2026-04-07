@@ -15,7 +15,15 @@ from src.constants import (
 
 class Game:
     def __init__(self, board_size: int = 8):
+        self.board_size = board_size
         self.board = Board(size=board_size)
+        self.current_player = PLAYER_1
+        self.game_over = False
+        self.winner = None
+        self.setup_board()
+
+    def reset(self) -> None:
+        self.board = Board(size=self.board_size)
         self.current_player = PLAYER_1
         self.game_over = False
         self.winner = None
@@ -32,7 +40,7 @@ class Game:
         else:
             self.current_player = PLAYER_1
 
-    def check_winner(self):
+    def check_winner(self) -> None:
         last_index = self.board.size - 1
 
         top_left = self.board.get_piece(0, 0)
@@ -50,17 +58,19 @@ class Game:
         if self.game_over:
             return False, 0
 
-        if is_legal_move(self.board, from_row, from_col, to_row, to_col, self.current_player):
-            self.board.move_piece(from_row, from_col, to_row, to_col)
-            self.check_winner()
+        if not is_legal_move(
+            self.board, from_row, from_col, to_row, to_col, self.current_player
+        ):
+            return False, ILLEGAL_MOVE_PENALTY
 
-            if self.game_over:
-                return True, WIN_REWARD
+        self.board.move_piece(from_row, from_col, to_row, to_col)
+        self.check_winner()
 
-            self.switch_turn()
-            return True, NORMAL_MOVE_REWARD
+        if self.game_over:
+            return True, WIN_REWARD
 
-        return False, ILLEGAL_MOVE_PENALTY
+        self.switch_turn()
+        return True, NORMAL_MOVE_REWARD
 
     def get_legal_moves(self):
         return get_legal_moves_for_player(self.board, self.current_player)
