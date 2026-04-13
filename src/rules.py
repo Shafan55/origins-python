@@ -51,6 +51,14 @@ def get_player_forward_direction(current_player: str) -> int:
     return 1 if current_player == PLAYER_1 else -1
 
 
+def get_starting_row(player: str, board_size: int) -> int:
+    return 0 if player == PLAYER_1 else board_size - 1
+
+
+def get_destination_row(player: str, board_size: int) -> int:
+    return board_size - 1 if player == PLAYER_1 else 0
+
+
 def is_human_piece(piece) -> bool:
     return piece is not None and piece.piece_type in {MALE_PIECE, FEMALE_PIECE}
 
@@ -111,9 +119,33 @@ def is_straight_line_move(from_row: int, from_col: int, to_row: int, to_col: int
     )
 
 
-def human_move_is_forward_only(from_row: int, to_row: int, current_player: str) -> bool:
+def is_on_starting_row(row: int, player: str, board_size: int) -> bool:
+    return row == get_starting_row(player, board_size)
+
+
+def is_on_destination_row(row: int, player: str, board_size: int) -> bool:
+    return row == get_destination_row(player, board_size)
+
+
+def is_human_locked_on_destination(row: int, player: str, board_size: int) -> bool:
+    return is_on_destination_row(row, player, board_size)
+
+
+def human_move_respects_direction(from_row: int, to_row: int, current_player: str) -> bool:
+    """
+    Human pieces may move:
+    - forward vertically
+    - forward diagonally
+    - horizontally
+    But not backward.
+    """
+    row_change = to_row - from_row
+
+    if row_change == 0:
+        return True
+
     forward = get_player_forward_direction(current_player)
-    return (to_row - from_row) * forward > 0
+    return row_change * forward > 0
 
 
 def path_is_clear_for_human(board, path) -> bool:
@@ -136,18 +168,23 @@ def is_legal_human_move(
     to_col: int,
     current_player: str,
 ) -> bool:
-    """
-    Origins-style human piece rule:
-    - move in straight line (vertical, horizontal, diagonal)
-    - cannot move backward
-    - cannot move onto neutral tile
-    - cannot jump over pieces
-    - cannot directly capture by landing
-    """
+    # locked on destination — cannot move
+    if is_on_destination_row(from_row, current_player, board.size):
+        return False
+
+    # cannot move horizontally within starting row
+    if is_on_starting_row(from_row, current_player, board.size):
+        if to_row == from_row:
+            return False
+
+    # cannot move back to starting row
+    if is_on_starting_row(to_row, current_player, board.size):
+        return False
+
     if not is_straight_line_move(from_row, from_col, to_row, to_col):
         return False
 
-    if not human_move_is_forward_only(from_row, to_row, current_player):
+    if not human_move_respects_direction(from_row, to_row, current_player):
         return False
 
     if not human_target_tile_is_valid(board, to_row, to_col):
@@ -159,6 +196,13 @@ def is_legal_human_move(
 
     if not path_is_clear_for_human(board, path):
         return False
+
+    # cannot jump over a human locked on destination row
+    for r, c in path:
+        blocking = board.get_piece(r, c)
+        if blocking is not None and is_human_piece(blocking):
+            if is_on_destination_row(r, blocking.owner, board.size):
+                return False
 
     target_piece = board.get_piece(to_row, to_col)
     if target_piece is not None:
@@ -188,34 +232,59 @@ def element_can_enter_tile(moving_element: str, target_tile: str) -> bool:
 
 
 def path_is_clear_for_element(board, piece, path, current_player: str) -> bool:
+    """
+    An element piece can pass through a square if:
+    - the tile is passable (neutral, same element, or weaker element)
+    - any occupying piece is either:
+        - a weaker opponent element (can capture by passing)
+        - nothing blocking otherwise
+
+    Blocked by:
+    - own pieces of any type
+    - equal element opponent pieces
+    - stronger element opponent pieces
+    - any human piece (cannot pass through humans)
+    - locked humans on destination row
+    """
     moving_element = piece.element
 
     for row, col in path:
         tile_type = board.get_tile(row, col)
+
         if not element_can_enter_tile(moving_element, tile_type):
             return False
 
         occupying_piece = board.get_piece(row, col)
+
         if occupying_piece is None:
             continue
 
+        # own pieces always block
         if occupying_piece.owner == current_player:
             return False
 
+        # human pieces always block (cannot pass through humans)
         if is_human_piece(occupying_piece):
             return False
 
+        # opponent element pieces
         if is_element_piece(occupying_piece):
             other_element = occupying_piece.element
 
+            # same element blocks
             if other_element == moving_element:
                 return False
 
+            # equal element blocks
             if elements_are_equal(moving_element, other_element):
                 return False
 
-            if not element_dominates(moving_element, other_element):
-                return False
+            # weaker element — can pass through (capture on the way)
+            if element_dominates(moving_element, other_element):
+                continue
+
+            # stronger element blocks
+            return False
 
     return True
 
@@ -232,9 +301,11 @@ def element_target_is_valid(board, piece, to_row: int, to_col: int, current_play
     if target_piece is None:
         return True
 
+    # own pieces block landing
     if target_piece.owner == current_player:
         return False
 
+    # cannot land on human pieces
     if is_human_piece(target_piece):
         return False
 
@@ -262,18 +333,39 @@ def is_legal_element_move(
     current_player: str,
 ) -> bool:
     """
-    Origins-style element rule:
+    Element rules:
+    - cannot move within starting row
+    - cannot return to either starting row
     - move any distance in straight line
-    - can travel through neutral tiles
-    - interacts with element tiles by dominance/equality rules
-    - cannot pass through blocking pieces
+    - interacts with tiles/pieces by dominance rules
     """
+    # cannot move within starting row
+    if is_on_starting_row(from_row, current_player, board.size):
+        if to_row == from_row:
+            return False
+
+    # cannot return to own starting row
+    if is_on_starting_row(to_row, current_player, board.size):
+        return False
+
+    # cannot enter opponent starting row either
+    opponent = PLAYER_2 if current_player == PLAYER_1 else PLAYER_1
+    if is_on_starting_row(to_row, opponent, board.size):
+        return False
+
     if not is_straight_line_move(from_row, from_col, to_row, to_col):
         return False
 
     path = get_path_squares(from_row, from_col, to_row, to_col)
     if path is None:
         return False
+
+    # path cannot pass through either starting row squares with locked humans
+    for r, c in path:
+        blocking = board.get_piece(r, c)
+        if blocking is not None and is_human_piece(blocking):
+            if is_on_destination_row(r, blocking.owner, board.size):
+                return False
 
     if not path_is_clear_for_element(board, piece, path, current_player):
         return False
@@ -311,24 +403,12 @@ def is_legal_move(
 
     if is_human_piece(piece):
         return is_legal_human_move(
-            board,
-            piece,
-            from_row,
-            from_col,
-            to_row,
-            to_col,
-            current_player,
+            board, piece, from_row, from_col, to_row, to_col, current_player,
         )
 
     if is_element_piece(piece):
         return is_legal_element_move(
-            board,
-            piece,
-            from_row,
-            from_col,
-            to_row,
-            to_col,
-            current_player,
+            board, piece, from_row, from_col, to_row, to_col, current_player,
         )
 
     return False
@@ -346,14 +426,8 @@ def get_candidate_destinations(board, piece, from_row: int, from_col: int):
 
     if is_element_piece(piece):
         directions = [
-            (-1, 0),
-            (1, 0),
-            (0, -1),
-            (0, 1),
-            (-1, -1),
-            (-1, 1),
-            (1, -1),
-            (1, 1),
+            (-1, 0), (1, 0), (0, -1), (0, 1),
+            (-1, -1), (-1, 1), (1, -1), (1, 1),
         ]
 
         for d_row, d_col in directions:
@@ -387,10 +461,7 @@ def get_legal_moves_for_player(board, current_player: str) -> list[Move]:
                 continue
 
             candidate_destinations = get_candidate_destinations(
-                board,
-                piece,
-                from_row,
-                from_col,
+                board, piece, from_row, from_col,
             )
 
             for to_row, to_col in candidate_destinations:
@@ -398,12 +469,7 @@ def get_legal_moves_for_player(board, current_player: str) -> list[Move]:
                     continue
 
                 if is_legal_move(
-                    board,
-                    from_row,
-                    from_col,
-                    to_row,
-                    to_col,
-                    current_player,
+                    board, from_row, from_col, to_row, to_col, current_player,
                 ):
                     legal_moves.append(Move(from_row, from_col, to_row, to_col))
 

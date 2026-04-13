@@ -34,10 +34,10 @@ ELEMENTS = [EARTH, WATER, FIRE, AIR]
 # Tile types
 # =========================================
 NEUTRAL_TILE = "neutral"
-EARTH_TILE = "earth"
-WATER_TILE = "water"
-FIRE_TILE = "fire"
-AIR_TILE = "air"
+EARTH_TILE = "tile_earth"
+WATER_TILE = "tile_water"
+FIRE_TILE = "tile_fire"
+AIR_TILE = "tile_air"
 
 TILE_TYPES = [
     NEUTRAL_TILE,
@@ -51,12 +51,24 @@ TILE_TYPES = [
 # =========================================
 # Display symbols
 # =========================================
-PLAYER_1_MALE_SYMBOL = "M"
-PLAYER_1_FEMALE_SYMBOL = "F"
-PLAYER_1_ELEMENT_SYMBOL = "E"
+PLAYER_1_MALE_SYMBOL    = "M"
+PLAYER_1_FEMALE_SYMBOL  = "F"
 
-PLAYER_2_MALE_SYMBOL = "m"
-PLAYER_2_FEMALE_SYMBOL = "f"
+PLAYER_1_EARTH_SYMBOL   = "Ea"
+PLAYER_1_WATER_SYMBOL   = "Wa"
+PLAYER_1_FIRE_SYMBOL    = "Fi"
+PLAYER_1_AIR_SYMBOL     = "Ai"
+
+PLAYER_2_MALE_SYMBOL    = "m"
+PLAYER_2_FEMALE_SYMBOL  = "f"
+
+PLAYER_2_EARTH_SYMBOL   = "ea"
+PLAYER_2_WATER_SYMBOL   = "wa"
+PLAYER_2_FIRE_SYMBOL    = "fi"
+PLAYER_2_AIR_SYMBOL     = "ai"
+
+# kept for backward compatibility
+PLAYER_1_ELEMENT_SYMBOL = "E"
 PLAYER_2_ELEMENT_SYMBOL = "e"
 
 
@@ -73,5 +85,5 @@ ILLEGAL_MOVE_PENALTY = -5
 # =========================================
 PROTOTYPE_BOARD_SIZE = 4
 FULL_GAME_BOARD_SIZE = 8
-PROTOTYPE_MAX_STEPS = 40
-FULL_GAME_MAX_STEPS = 100
+PROTOTYPE_MAX_STEPS = 80
+FULL_GAME_MAX_STEPS = 150
