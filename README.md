@@ -1,8 +1,7 @@
 cat > README.md <<'EOF'
 # OrOgins AI Project
 
-> AI-powered board game prototype built for **COS-5031-E – Discipline-specific Artificial Intelligence Project**  
-> **University of Bradford**
+> AI-powered board game prototype built for **Discipline-specific Artificial Intelligence Project**
 
 ---
 
@@ -127,7 +126,6 @@ origins-python/
 
 ```bash
 pip install -r requirements.txt
-```
 
 ### Start the Flask AI server
 
@@ -233,15 +231,6 @@ Unity is responsible for:
 * stronger gameplay balancing
 * full-game testing
 * standalone executable build
-
----
-
-## Academic Context
-
-**Module:** COS-5031-E – Discipline-specific Artificial Intelligence Project
-**University:** University of Bradford
-
-This repository supports the **group AI prototype, presentation, and live demonstration** for the module assessment.
 
 ---
 
