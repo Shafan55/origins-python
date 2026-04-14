@@ -120,13 +120,13 @@ origins-python/
 └── tests/
     └── test_game.py
 
-## How to Run
+**How to Run**
 
 ### Install dependencies
-
+```
 ```bash
 pip install -r requirements.txt
-
+```
 ### Start the Flask AI server
 
 ```bash
