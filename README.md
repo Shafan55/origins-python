@@ -1,71 +1,113 @@
+cat > README.md <<'EOF'
 # OrOgins AI Project
 
-## Project Overview
-This project was developed for the University of Bradford module **COS-5031-E – Discipline-specific Artificial Intelligence Project**. The aim of the project is to build a playable AI-based version of the board game **OrOgins** and train an AI agent to play it using **Reinforcement Learning**.
+![Python](https://img.shields.io/badge/Python-Game%20Logic-blue)
+![PyTorch](https://img.shields.io/badge/PyTorch-DQN-red)
+![Flask](https://img.shields.io/badge/Flask-API-black)
+![Unity](https://img.shields.io/badge/Unity-Frontend-lightgrey)
+![Status](https://img.shields.io/badge/Status-Prototype%20Complete-brightgreen)
 
-The game logic and AI system were developed in **Python**, while the playable interface was created in **Unity**. A **Flask API** is used to connect the trained AI model to the Unity front end so that a human player can play against the AI in real time.
+> AI-powered board game prototype built for **COS-5031-E – Discipline-specific Artificial Intelligence Project**  
+> **University of Bradford**
+
+---
+
+## Overview
+
+**OrOgins AI Project** is a digital board game prototype that combines:
+
+- **Python** for game logic and AI
+- **PyTorch** for Deep Q-Network (DQN) training
+- **Flask** for API communication
+- **Unity 6** and **C#** for the front-end gameplay experience
+
+The aim of the project is to build a playable version of **OrOgins** and integrate a trained **Reinforcement Learning AI agent** that can play against a human user in real time.
+
+---
 
 ## Team Members
-- **Shafan Shafqat** – Reinforcement Learning, AI integration, Scrum Master
-- **Abdullah Butt** – Python game logic and rule implementation
-- **Ahmed Saeed** – Unity development and gameplay interface
+
+- **Shafan Shafqat** — Reinforcement Learning, AI integration, Scrum Master
+- **Abdullah Butt** — Python game logic and rules
+- **Ahmed Saeed** — Unity development and gameplay interface
+
+---
 
 ## Project Aim
-The main goal of this project is to:
-- create a digital version of the OrOgins board game
+
+The main goals of this project are:
+
+- create a digital version of the **OrOgins** board game
 - implement the full rules and gameplay system
-- train an AI agent to play the game using Reinforcement Learning
-- connect the trained AI to a Unity game so users can play against it
+- train an AI agent using **Reinforcement Learning**
+- connect the AI to a **Unity** front end
+- allow **Human vs AI** gameplay in a working prototype
+
+---
 
 ## Game Summary
-OrOgins is a 2-player strategy board game played on an **8x8 board**.
+
+**OrOgins** is a 2-player strategy board game played on an **8x8 board**.
 
 Each player has:
-- 1 Male piece
-- 1 Female piece
-- 8 Element pieces:
+
+- **1 Male piece**
+- **1 Female piece**
+- **8 Element pieces**
   - 2 Earth
   - 2 Water
   - 2 Fire
   - 2 Air
 
 ### Objective
-The objective is to move both the **Male** and **Female** pieces to the opponent’s starting row.
 
-### Element System
-The game includes an element dominance cycle:
+The objective is to move both the **Male** and **Female** pieces to the opponent's starting row.
+
+### Element Dominance Cycle
+
 - **Earth beats Water**
 - **Water beats Fire**
 - **Fire beats Air**
 - **Air beats Earth**
 
-Element pieces can affect tiles and capture weaker element pieces depending on the game rules.
+Element pieces interact with the board by changing tiles and capturing weaker elements according to the game rules.
+
+---
 
 ## Main Features
-- Full OrOgins game logic implemented in Python
-- Reinforcement Learning environment for training the AI
-- DQN-trained AI model
-- Flask API server for communication between Python and Unity
-- Unity front end for human vs AI gameplay
+
+- Full **OrOgins** rule system implemented in Python
+- **Reinforcement Learning environment** for AI training
+- **DQN-trained AI model**
+- **Flask API** for Unity integration
+- **Unity playable prototype**
+- **Human vs AI gameplay**
 - Difficulty modes:
   - Easy
   - Normal
   - Hard
 - Move validation
-- Game state export for Unity rendering
-- Unit testing for rule validation and gameplay logic
+- Board state export for Unity rendering
+- Unit testing for gameplay and rules
 
-## Technologies Used
-- **Python**
-- **PyTorch**
-- **Flask**
-- **Unity 6**
-- **C#**
-- **GitHub**
-- **Reinforcement Learning (DQN)**
-- **Pytest**
+---
+
+## Tech Stack
+
+| Technology | Purpose |
+|---|---|
+| Python | Core game logic and AI |
+| PyTorch | DQN model training |
+| Flask | API communication |
+| Unity 6 | Front-end game engine |
+| C# | Unity gameplay scripting |
+| Pytest | Unit testing |
+| GitHub | Version control |
+
+---
 
 ## Project Structure
+
 ```text
 origins-python/
 ├── main.py
@@ -84,33 +126,3 @@ origins-python/
 │   └── move.py
 └── tests/
     └── test_game.py
-
-Python Files Summary
-
-1.constants.py – stores game constants and settings
-2.rules.py – contains legal move logic and rule checks
-3.pieces.py – defines the piece class
-4.board.py – manages the board state
-5.move.py – defines move objects
-6.game.py – handles main game flow and game state export
-7.environment.py – reinforcement learning environment
-8.dqn_agent.py – DQN model, replay buffer, and training functions
-9.q_learning.py – Q-learning implementation used as a backup method
-10.main.py – menu and execution entry point
-11.test_game.py – unit tests for rules and gameplay logic
-
-
-Trained Models:
-1.trained_dqn_agent_8x8_best.pth
-Main trained model for the full 8x8 board.
-Achieved approximately 76% win rate vs random agent.
-
-2.trained_dqn_agent_4x4_best.pth
-Prototype model for simplified testing.
-Achieved approximately 91.5% win rate.
-
-How to Run the Python Project:
-1.Open the project folder in VS Code or terminal.
-2.Install the required Python packages.
-3.Run the Flask server:
-python ai_flask_server.py
