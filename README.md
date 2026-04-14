@@ -1,4 +1,3 @@
-````bash
 cat > README.md <<'EOF'
 # OrOgins AI Project
 
@@ -121,9 +120,6 @@ origins-python/
 │   └── move.py
 └── tests/
     └── test_game.py
-````
-
----
 
 ## How to Run
 
