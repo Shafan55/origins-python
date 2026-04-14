@@ -86,6 +86,7 @@ origins-python/
     └── test_game.py
 
 Python Files Summary
+
 1.constants.py – stores game constants and settings
 2.rules.py – contains legal move logic and rule checks
 3.pieces.py – defines the piece class
@@ -97,3 +98,19 @@ Python Files Summary
 9.q_learning.py – Q-learning implementation used as a backup method
 10.main.py – menu and execution entry point
 11.test_game.py – unit tests for rules and gameplay logic
+
+
+Trained Models:
+1.trained_dqn_agent_8x8_best.pth
+Main trained model for the full 8x8 board.
+Achieved approximately 76% win rate vs random agent.
+
+2.trained_dqn_agent_4x4_best.pth
+Prototype model for simplified testing.
+Achieved approximately 91.5% win rate.
+
+How to Run the Python Project:
+1.Open the project folder in VS Code or terminal.
+2.Install the required Python packages.
+3.Run the Flask server:
+python ai_flask_server.py
