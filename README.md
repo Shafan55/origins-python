@@ -121,7 +121,7 @@ origins-python/
     └── test_game.py
 
 **How to Run**
-
+```
 ### Install dependencies
 ```
 ```bash
