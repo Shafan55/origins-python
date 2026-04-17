@@ -234,7 +234,7 @@ def train_and_save_dqn_agent_8x8():
 
 
 def load_dqn_agent(board_size=4):
-    # fixed indentation bug — both branches now correctly aligned
+    
     if board_size == 8:
         model_path = "trained_dqn_agent_8x8_best.pth"
         include_tile_state = False

@@ -1,27 +1,19 @@
-# =========================================
-# Board configuration
-# =========================================
+
 BOARD_SIZE = 8
 
 
-# =========================================
-# Players
-# =========================================
+
 PLAYER_1 = "Player1"
 PLAYER_2 = "Player2"
 
 
-# =========================================
-# Piece types
-# =========================================
+
 MALE_PIECE = "male"
 FEMALE_PIECE = "female"
 ELEMENT_PIECE = "element"
 
 
-# =========================================
-# Elements
-# =========================================
+
 EARTH = "earth"
 WATER = "water"
 FIRE = "fire"
@@ -30,9 +22,7 @@ AIR = "air"
 ELEMENTS = [EARTH, WATER, FIRE, AIR]
 
 
-# =========================================
-# Tile types
-# =========================================
+
 NEUTRAL_TILE = "neutral"
 EARTH_TILE = "tile_earth"
 WATER_TILE = "tile_water"
@@ -48,9 +38,7 @@ TILE_TYPES = [
 ]
 
 
-# =========================================
-# Display symbols
-# =========================================
+
 PLAYER_1_MALE_SYMBOL    = "M"
 PLAYER_1_FEMALE_SYMBOL  = "F"
 
@@ -67,22 +55,18 @@ PLAYER_2_WATER_SYMBOL   = "wa"
 PLAYER_2_FIRE_SYMBOL    = "fi"
 PLAYER_2_AIR_SYMBOL     = "ai"
 
-# kept for backward compatibility
+
 PLAYER_1_ELEMENT_SYMBOL = "E"
 PLAYER_2_ELEMENT_SYMBOL = "e"
 
 
-# =========================================
-# Rewards
-# =========================================
+
 WIN_REWARD = 10
 NORMAL_MOVE_REWARD = 0
 ILLEGAL_MOVE_PENALTY = -5
 
 
-# =========================================
-# RL / environment defaults
-# =========================================
+
 PROTOTYPE_BOARD_SIZE = 4
 FULL_GAME_BOARD_SIZE = 8
 PROTOTYPE_MAX_STEPS = 80

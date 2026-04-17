@@ -139,7 +139,7 @@ class Game:
                 self.board.place_piece(row, col, piece)
 
         else:
-            # 4x4 prototype setup
+            
             self.board.place_piece(0, 0, Piece(MALE_PIECE,    PLAYER_1, PLAYER_1_MALE_SYMBOL))
             self.board.place_piece(0, 1, Piece(FEMALE_PIECE,  PLAYER_1, PLAYER_1_FEMALE_SYMBOL))
             self.board.place_piece(0, 2, Piece(ELEMENT_PIECE, PLAYER_1, PLAYER_1_EARTH_SYMBOL, element=EARTH))

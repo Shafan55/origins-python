@@ -24,9 +24,7 @@ from src.constants import (
 from src.pieces import Piece
 
 
-# =========================================
-# Game setup tests
-# =========================================
+
 
 def test_game_starts_with_player_1():
     game = Game(board_size=8)
@@ -85,22 +83,20 @@ def test_legal_moves_exist_for_player_1_on_4x4():
     assert len(legal_moves) > 0
 
 
-# =========================================
-# Environment tests
-# =========================================
+
 
 def test_4x4_environment_reset_returns_valid_state():
     env = OriginsEnv(board_size=4)
     state = env.reset()
     assert isinstance(state, tuple)
-    assert len(state) == 17  # 4x4 pieces + current player
+    assert len(state) == 17  
 
 
 def test_8x8_environment_reset_returns_valid_state():
     env = OriginsEnv(board_size=8, include_tile_state=True)
     state = env.reset()
     assert isinstance(state, tuple)
-    # 8x8 pieces (64) + 8x8 tiles (64) + current player (1) = 129
+    
     assert len(state) == 129
 
 
@@ -130,9 +126,7 @@ def test_4x4_environment_step_returns_correct_format():
     assert "steps"          in info
 
 
-# =========================================
-# Move legality tests
-# =========================================
+
 
 def test_illegal_move_fails():
     game = Game(board_size=4)
@@ -145,7 +139,7 @@ def test_illegal_move_fails():
 def test_human_cannot_move_within_starting_row():
     """Human pieces cannot move horizontally within their starting row."""
     game = Game(board_size=8)
-    # Player 1 male is at (0,0) — try to move to (0,1) which is also row 0
+    
     moved, reward = game.make_move(0, 0, 0, 1)
     assert moved is False
     assert reward == ILLEGAL_MOVE_PENALTY
@@ -184,15 +178,13 @@ def test_human_cannot_return_to_starting_row():
 def test_element_cannot_move_within_starting_row():
     """Element pieces cannot move horizontally within their starting row."""
     game = Game(board_size=8)
-    # Player 1 element at (0,2) — try to move to (0,5) same row
+    
     moved, reward = game.make_move(0, 2, 0, 5)
     assert moved is False
     assert reward == ILLEGAL_MOVE_PENALTY
 
 
-# =========================================
-# Element effect tests
-# =========================================
+
 
 def test_element_move_converts_neutral_tile():
     """Element moving over neutral squares converts them to its element type."""
@@ -253,9 +245,7 @@ def test_equal_elements_cannot_pass_each_other():
     assert moved is False
 
 
-# =========================================
-# Win / loss / draw tests
-# =========================================
+
 
 def test_player_1_wins_when_both_humans_reach_destination():
     game = Game(board_size=8)
@@ -307,7 +297,7 @@ def test_player_wins_when_opponent_loses_humans():
     game = Game(board_size=8)
     game.board.reset()
 
-    # only Player 2 has humans
+    
     male   = Piece(MALE_PIECE,   PLAYER_2, PLAYER_2_MALE_SYMBOL)
     female = Piece(FEMALE_PIECE, PLAYER_2, PLAYER_2_FEMALE_SYMBOL)
     game.board.place_piece(4, 4, male)
@@ -319,9 +309,7 @@ def test_player_wins_when_opponent_loses_humans():
     assert game.winner == PLAYER_2
 
 
-# =========================================
-# Game state export test (Unity prep)
-# =========================================
+
 
 def test_game_state_export():
     """Game state export should return all required keys for Unity."""

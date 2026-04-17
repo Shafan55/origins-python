@@ -19,9 +19,7 @@ from src.constants import (
     AIR,
 )
 
-# =========================================
-# Reward shaping constants
-# =========================================
+
 REWARD_WIN                  =  150.0
 REWARD_LOSE                 =  -50.0
 REWARD_DRAW_TIMEOUT         =  -40.0
@@ -191,7 +189,7 @@ class OriginsEnv:
         moving_player = self.game.current_player
         opponent = PLAYER_2 if moving_player == PLAYER_1 else PLAYER_1
 
-        # snapshot before move
+        
         player_progress_before   = self.get_player_progress_score(moving_player)
         opponent_pieces_before   = self.count_player_pieces(opponent)
         humans_on_goal_before    = self.count_player_humans_on_goal_row(moving_player)
@@ -216,7 +214,7 @@ class OriginsEnv:
 
         done = self.game.is_terminal()
 
-        # snapshot after move
+        
         player_progress_after  = self.get_player_progress_score(moving_player)
         opponent_pieces_after  = self.count_player_pieces(opponent)
         humans_on_goal_after   = self.count_player_humans_on_goal_row(moving_player)
@@ -227,52 +225,52 @@ class OriginsEnv:
         goal_progress_delta = humans_on_goal_after - humans_on_goal_before
         lost_human          = own_humans_before - own_humans_after
 
-        # --- reward shaping ---
+        
 
-        # progress toward goal
+
         reward += REWARD_PROGRESS_WEIGHT * progress_delta
 
-        # capturing opponent pieces
+        
         if captured_count > 0:
             reward += REWARD_CAPTURE_OPPONENT * captured_count
 
-        # human reaching goal row
+        
         if goal_progress_delta > 0:
             reward += REWARD_HUMAN_GOAL * goal_progress_delta
 
-        # penalty for losing own human pieces
+        
         if lost_human > 0:
             reward += REWARD_LOSE_OWN_HUMAN * lost_human
 
-        # step penalty to discourage stalling
+        
         if not done:
             reward += REWARD_STEP_PENALTY
 
-        # late game penalty to push for faster wins
+        
         if not done and self.current_step > int(self.max_steps * LATE_GAME_THRESHOLD):
             reward += REWARD_LATE_GAME_PENALTY
 
-        # terminal rewards — much stronger to force decisive play
+        
         if done:
             if self.game.winner == moving_player:
                 reward += REWARD_WIN
             elif self.game.winner == opponent:
                 reward += REWARD_LOSE
             else:
-                # distinguish timeout draw from no-moves draw
+                
                 if self.current_step >= self.max_steps:
                     reward += REWARD_DRAW_TIMEOUT
                 else:
                     reward += REWARD_DRAW_NO_MOVES
 
-        # timeout — treat as terminal
+        
         if not done and self.current_step >= self.max_steps:
             done = True
             reward += REWARD_DRAW_TIMEOUT
 
         next_state = self.get_state()
 
-        # repetition penalty
+        
         self.state_visit_counts[next_state] = (
             self.state_visit_counts.get(next_state, 0) + 1
         )
@@ -280,7 +278,7 @@ class OriginsEnv:
         if repeat_count >= 2:
             reward += REWARD_REPETITION_PENALTY * (repeat_count - 1)
 
-        # passive penalty for 8x8 — punish doing nothing useful
+        
         if (
             self.board_size == 8
             and progress_delta <= 0

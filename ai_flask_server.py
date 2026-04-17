@@ -36,9 +36,7 @@ from src.dqn_agent import DQNAgent, build_all_actions, build_action_index_map
 from src.environment import OriginsEnv
 from src.constants import PLAYER_1, PLAYER_2
 
-# ─────────────────────────────────────────────
-# Logging
-# ─────────────────────────────────────────────
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -46,9 +44,7 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-# ─────────────────────────────────────────────
-# Configuration
-# ─────────────────────────────────────────────
+
 MODEL_PATH    = "trained_dqn_agent_8x8_best.pth"
 BOARD_SIZE    = 8
 INCLUDE_TILES = False
@@ -59,15 +55,11 @@ DIFFICULTY_SETTINGS = {
     "hard":   {"epsilon": 0.0,  "label": "Hard",   "description": "Full DQN"},
 }
 
-# ─────────────────────────────────────────────
-# Flask app
-# ─────────────────────────────────────────────
+
 app = Flask(__name__)
 CORS(app)
 
-# ─────────────────────────────────────────────
-# Global state
-# ─────────────────────────────────────────────
+
 agent           = None
 all_actions     = None
 action_to_index = None
@@ -78,9 +70,7 @@ move_count      = 0
 current_difficulty = "normal"
 
 
-# ─────────────────────────────────────────────
-# Helpers
-# ─────────────────────────────────────────────
+
 
 def load_model():
     """Load DQN model and build action space."""
@@ -111,11 +101,11 @@ def get_ai_action(state, valid_actions):
 
     epsilon = DIFFICULTY_SETTINGS[current_difficulty]["epsilon"]
 
-    # Easy mode — always random
+    
     if current_difficulty == "easy":
         return random.choice(valid_actions)
 
-    # Normal/Hard — use DQN with set epsilon
+    
     old_epsilon   = agent.epsilon
     agent.epsilon = epsilon
     action        = agent.choose_action(state, valid_actions, all_actions, action_to_index)
@@ -174,9 +164,7 @@ def error_response(message: str, status: int = 400):
     return jsonify({"success": False, "error": message}), status
 
 
-# ─────────────────────────────────────────────
-# Routes
-# ─────────────────────────────────────────────
+
 
 @app.route("/health", methods=["GET"])
 def health():
@@ -425,7 +413,7 @@ def move():
 
     data = request.get_json(silent=True) or {}
 
-    # ── Apply human move if provided ─────────────────────────────────
+    
     human_move_data = data.get("human_move")
     if human_move_data:
         required = ("from_row", "from_col", "to_row", "to_col")
@@ -461,7 +449,7 @@ def move():
                 "think_ms":   0.0,
             }), 200
 
-    # ── AI move ──────────────────────────────────────────────────────
+    
     valid_actions = env.get_valid_actions()
 
     if not valid_actions:
@@ -522,9 +510,7 @@ def move():
     return jsonify(response), 200
 
 
-# ─────────────────────────────────────────────
-# Error handlers
-# ─────────────────────────────────────────────
+
 
 @app.errorhandler(404)
 def not_found(e):
@@ -539,9 +525,7 @@ def internal_error(e):
     return jsonify({"success": False, "error": "Internal server error"}), 500
 
 
-# ─────────────────────────────────────────────
-# Startup
-# ─────────────────────────────────────────────
+
 
 def print_banner(host: str, port: int):
     print()

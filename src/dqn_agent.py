@@ -371,11 +371,11 @@ def train_dqn(
     include_tile_state: bool = False,
     checkpoint_prefix: str | None = None,
 ):
-    print("train_dqn called!", flush=True)  # add this line
+    print("train_dqn called!", flush=True)  
     env = OriginsEnv(board_size=board_size, include_tile_state=include_tile_state)
-    print("env created!", flush=True)  # add this line
+    print("env created!", flush=True)  
     initial_state = env.reset()
-    print("env reset!", flush=True)  # add this line
+    print("env reset!", flush=True)  
 
     env = OriginsEnv(board_size=board_size, include_tile_state=include_tile_state)
     initial_state = env.reset()
@@ -385,7 +385,7 @@ def train_dqn(
     action_to_index = build_action_index_map(all_actions)
     action_size   = len(all_actions)
 
-    # scale replay and batch to board size
+    
     replay_capacity   = 10000  if board_size == 4 else 50000
     batch_size        = 32     if board_size == 4 else 64
     target_update_freq= 50    if board_size == 4 else 100
@@ -420,7 +420,7 @@ def train_dqn(
 
     for episode in range(episodes):
 
-        # refresh frozen opponent every 500 episodes
+        
         if episode > 0 and episode % 500 == 0:
             frozen_agent = clone_as_frozen_agent(agent)
             print(f"  [Episode {episode}] Frozen opponent updated.")
@@ -531,7 +531,7 @@ def train_dqn(
                 f"Eps: {agent.epsilon:.3f}"
             )
 
-        # checkpoint every 500 episodes
+        
         if checkpoint_prefix and (episode + 1) % 500 == 0:
             quick_eval = evaluate_quick_fair(
                 agent, all_actions, action_to_index,
@@ -557,7 +557,7 @@ def train_dqn(
                 agent.save_model(best_path)
                 print(f"New best model saved: {best_path}")
 
-    # final summary
+
     print("\nDQN TRAINING SUMMARY")
     print("=" * 50)
     print(f"Total episodes:         {episodes}")

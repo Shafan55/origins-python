@@ -168,16 +168,16 @@ def is_legal_human_move(
     to_col: int,
     current_player: str,
 ) -> bool:
-    # locked on destination — cannot move
+    
     if is_on_destination_row(from_row, current_player, board.size):
         return False
 
-    # cannot move horizontally within starting row
+    
     if is_on_starting_row(from_row, current_player, board.size):
         if to_row == from_row:
             return False
 
-    # cannot move back to starting row
+    
     if is_on_starting_row(to_row, current_player, board.size):
         return False
 
@@ -197,7 +197,7 @@ def is_legal_human_move(
     if not path_is_clear_for_human(board, path):
         return False
 
-    # cannot jump over a human locked on destination row
+    
     for r, c in path:
         blocking = board.get_piece(r, c)
         if blocking is not None and is_human_piece(blocking):
@@ -259,31 +259,31 @@ def path_is_clear_for_element(board, piece, path, current_player: str) -> bool:
         if occupying_piece is None:
             continue
 
-        # own pieces always block
+    
         if occupying_piece.owner == current_player:
             return False
 
-        # human pieces always block (cannot pass through humans)
+        
         if is_human_piece(occupying_piece):
             return False
 
-        # opponent element pieces
+        
         if is_element_piece(occupying_piece):
             other_element = occupying_piece.element
 
-            # same element blocks
+            
             if other_element == moving_element:
                 return False
 
-            # equal element blocks
+            
             if elements_are_equal(moving_element, other_element):
                 return False
 
-            # weaker element — can pass through (capture on the way)
+            
             if element_dominates(moving_element, other_element):
                 continue
 
-            # stronger element blocks
+            
             return False
 
     return True
@@ -301,11 +301,11 @@ def element_target_is_valid(board, piece, to_row: int, to_col: int, current_play
     if target_piece is None:
         return True
 
-    # own pieces block landing
+    
     if target_piece.owner == current_player:
         return False
 
-    # cannot land on human pieces
+    
     if is_human_piece(target_piece):
         return False
 
@@ -339,16 +339,16 @@ def is_legal_element_move(
     - move any distance in straight line
     - interacts with tiles/pieces by dominance rules
     """
-    # cannot move within starting row
+    
     if is_on_starting_row(from_row, current_player, board.size):
         if to_row == from_row:
             return False
 
-    # cannot return to own starting row
+    
     if is_on_starting_row(to_row, current_player, board.size):
         return False
 
-    # cannot enter opponent starting row either
+    
     opponent = PLAYER_2 if current_player == PLAYER_1 else PLAYER_1
     if is_on_starting_row(to_row, opponent, board.size):
         return False
@@ -360,7 +360,7 @@ def is_legal_element_move(
     if path is None:
         return False
 
-    # path cannot pass through either starting row squares with locked humans
+    
     for r, c in path:
         blocking = board.get_piece(r, c)
         if blocking is not None and is_human_piece(blocking):
